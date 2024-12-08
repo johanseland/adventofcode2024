@@ -42,7 +42,7 @@ def find_antinodes2(
 ) -> list[tuple[int, int]]:
     antinodes: list[tuple[int, int]] = []
 
-    def in_range(t: tuple[int, int]):
+    def in_range(t: tuple[int, int]) -> bool:
         return 0 <= t[0] < dims[0] and 0 <= t[1] < dims[1]
 
     for i in range(len(antennas)):
