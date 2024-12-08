@@ -3,14 +3,13 @@ from collections import defaultdict
 
 
 def read_input(path: Path) -> tuple[dict[str, list[tuple[int, int]]], tuple[int, int]]:
-    d: dict[str, list[tuple[int, int]]] = defaultdict(list[tuple[int, int]])
+    d: dict[str, list[tuple[int, int]]] = defaultdict(list)
 
     with open(path) as file:
-        for row, line in enumerate(file.readlines()):
+        for row, line in enumerate(file):
             for column, char in enumerate(line.strip()):
-                if char == ".":
-                    continue
-                d[char].append((row, column))
+                if char != ".":
+                    d[char].append((row, column))
 
     return (d, (row + 1, column + 1))
 
@@ -18,7 +17,7 @@ def read_input(path: Path) -> tuple[dict[str, list[tuple[int, int]]], tuple[int,
 def find_antinodes(
     antennas: list[tuple[int, int]], dims: tuple[int, int]
 ) -> list[tuple[int, int]]:
-    antinodes: list[int, int] = []
+    antinodes: list[tuple[int, int]] = []
 
     def in_range(t: tuple[int, int]):
         return 0 <= t[0] < dims[0] and 0 <= t[1] < dims[1]
@@ -29,12 +28,10 @@ def find_antinodes(
 
             dist = (a1[0] - a0[0], a1[1] - a0[1])
 
-            an0 = (a0[0] - dist[0], a0[1] - dist[1])
-            if in_range(an0):
+            if in_range(an0 := (a0[0] - dist[0], a0[1] - dist[1])):
                 antinodes.append(an0)
 
-            an1 = (a1[0] + dist[0], a1[1] + dist[1])
-            if in_range(an1):
+            if in_range(an1 := (a1[0] + dist[0], a1[1] + dist[1])):
                 antinodes.append(an1)
 
     return antinodes
@@ -43,7 +40,7 @@ def find_antinodes(
 def find_antinodes2(
     antennas: list[tuple[int, int]], dims: tuple[int, int]
 ) -> list[tuple[int, int]]:
-    antinodes: list[int, int] = []
+    antinodes: list[tuple[int, int]] = []
 
     def in_range(t: tuple[int, int]):
         return 0 <= t[0] < dims[0] and 0 <= t[1] < dims[1]
@@ -55,32 +52,29 @@ def find_antinodes2(
             dist = (a1[0] - a0[0], a1[1] - a0[1])
 
             a = 0
-            an0 = (a0[0] - a * dist[0], a0[1] - a * dist[1])
-            while in_range(an0):
+            while in_range(an0 := (a0[0] - a * dist[0], a0[1] - a * dist[1])):
                 antinodes.append(an0)
                 a += 1
-                an0 = (a0[0] - a * dist[0], a0[1] - a * dist[1])
 
             a = 0
-            an1 = (a1[0] + a * dist[0], a1[1] + a * dist[1])
-            while in_range(an1):
+            while in_range(an1 := (a1[0] + a * dist[0], a1[1] + a * dist[1])):
                 antinodes.append(an1)
                 a += 1
-                an1 = (a1[0] + a * dist[0], a1[1] + a * dist[1])
 
     return antinodes
 
 
 def count_antinodes(
-    antennas: dict[str, list[tuple[int, int]]], dims: tuple[int, int]
+    antennas_all_frequencies: dict[str, list[tuple[int, int]]], dims: tuple[int, int]
 ) -> int:
-    s: set[tuple[int, int]] = set()
+    # Using a set here will remove duplicates from different frequencies.
+    antinodes_all_frequencies: set[tuple[int, int]] = set()
 
-    for _, frequency_antennas in antennas.items():
+    for _, frequency_antennas in antennas_all_frequencies.items():
         antinodes = find_antinodes(frequency_antennas, dims)
-        s.update(antinodes)
+        antinodes_all_frequencies.update(antinodes)
 
-    return len(s)
+    return len(antinodes_all_frequencies)
 
 
 def count_antinodes2(
