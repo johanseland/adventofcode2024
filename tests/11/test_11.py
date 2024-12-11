@@ -1,6 +1,7 @@
 import concurrent.futures
 import time
 import itertools
+from functools import cache
 
 
 def apply_rules(input: list[int]) -> list[int]:
@@ -22,22 +23,42 @@ def apply_rules(input: list[int]) -> list[int]:
     return output
 
 
-def apply_rules_multiprocess(input: list[int], chunk_size: int) -> list[int]:
-    def chunked_iterable(iterable, size):
-        it = iter(iterable)
-        while True:
-            chunk = list(itertools.islice(it, size))
-            if not chunk:
-                break
-            yield chunk
+@cache
+def count_depth_first(val: int, steps_to_go: int) -> int:
+    if steps_to_go == 0:
+        return 1
 
-    subsets = chunked_iterable(input, chunk_size)
+    if val == 0:
+        return count_depth_first(1, steps_to_go - 1)
+    else:
+        ss = str(val)
+        if len(ss) % 2 == 0:
+            mid = len(ss) // 2
+            s0 = int(ss[:mid])
+            s1 = int(ss[mid:])
+            return count_depth_first(s0, steps_to_go - 1) + count_depth_first(
+                s1, steps_to_go - 1
+            )
+        else:
+            return count_depth_first(val * 2024, steps_to_go - 1)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-        # future = executor.submit(pow, 323, 1235)
-        future = list(executor.map(apply_rules, subsets))
 
-    return [item for sublist in future for item in sublist]
+def count_stones(input: list[int], depth: int) -> int:
+    sum = 0
+    for i in input:
+        sum += count_depth_first(i, depth)
+
+    return sum
+
+
+def test_count_stones() -> None:
+    input = [125, 17]
+    assert count_stones(input, 0) == 2
+    assert count_stones(input, 1) == 3
+    assert count_stones(input, 2) == 4
+    assert count_stones(input, 3) == 5
+    assert count_stones(input, 4) == 9
+    assert count_stones(input, 25) == 55312
 
 
 def test_apply_rules() -> None:
@@ -88,24 +109,10 @@ def test_apply_rules() -> None:
     assert len(next) == 55312
 
 
-def test_apply_rules_threading() -> None:
-    prev = [6571, 0, 5851763, 526746, 23, 69822, 9, 989]
-
-    chunk_size = 10000
-    for i in range(30):
-        if len(prev) < chunk_size:
-            next = apply_rules(prev)
-        else:
-            next = apply_rules_multiprocess(prev, chunk_size)
-
-        prev = next
-        # print(f"Num blinks: {i} - number of stones: {len(next)}")
-
-
 if __name__ == "__main__":
     input = [6571, 0, 5851763, 526746, 23, 69822, 9, 989]
 
-    blinks = 35
+    blinks = 25
 
     prev = input
     for i in range(blinks):
@@ -115,22 +122,10 @@ if __name__ == "__main__":
         end = time.perf_counter() - start
         print(f"Num blinks: {i} - number of stones: {len(next)}, time: {end}s")
 
-    # blinks = 40
-    prev = input
-    chunk_size = 100000
-    for i in range(blinks):
-        start = time.perf_counter()
-
-        if len(prev) < chunk_size:
-            next = apply_rules(prev)
-        else:
-            next = apply_rules_multiprocess(prev, chunk_size)
-
-        prev = next
-        # Code you want to time
-        end = time.perf_counter() - start
-        print(
-            f"Num blinks (multiprocess): {i} - number of stones: {len(next)}, time: {end}s"
-        )
-
     print(f"Number of stones after {blinks} blinks: {len(next)}")
+
+    blinks = 75
+    start = time.perf_counter()
+    stone_count = count_stones(input, blinks)
+    end = time.perf_counter() - start
+    print(f"Num blinks: {blinks} - number of stones: {stone_count}, time: {end}s")
